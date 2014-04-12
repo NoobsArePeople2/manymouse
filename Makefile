@@ -1,118 +1,132 @@
-# Set this variable if you need to.
-WINDOWS_JDK_PATH := C:\\Program\ Files\\Java\\jdk1.6.0_02\\
-LINUX_JDK_PATH := /usr/lib/j2se/1.4/
+#****************************************************************************
+#
+# Makefile for TinyXml test.
+# Lee Thomason
+# www.grinninglizard.com
+#
+# This is a GNU make (gmake) makefile
+#****************************************************************************
 
-linux := false
-macosx := false
-cygwin := false
+# DEBUG can be set to YES to include debugging info, or NO otherwise
+DEBUG          := YES
 
-uname_s := $(shell uname -s)
-ifeq ($(strip $(uname_s)),Darwin)
-  macosx := true
+# PROFILE can be set to YES to include profiling info, or NO otherwise
+PROFILE        := NO
+
+#****************************************************************************
+
+# CC     := gcc
+# CXX    := g++
+# LD     := g++
+CC     := clang
+CXX    := clang++
+LD     := clang++
+AR     := ar rc
+RANLIB := ranlib
+ARCH   := -arch i386
+C_LIB  := -stdlib=libc++
+
+DEBUG_CFLAGS     := -Wall -Wno-format -g -DDEBUG ${ARCH} ${C_LIB}
+RELEASE_CFLAGS   := -Wall -Wno-unknown-pragmas -Wno-format -O3 ${ARCH} ${C_LIB}
+
+LIBS         :=
+
+DEBUG_CXXFLAGS   := ${DEBUG_CFLAGS}
+RELEASE_CXXFLAGS := ${RELEASE_CFLAGS}
+
+DEBUG_LDFLAGS    := -g ${ARCH} ${C_LIB}
+RELEASE_LDFLAGS  := ${ARCH} ${C_LIB}
+
+ifeq (YES, ${DEBUG})
+	 CFLAGS       := ${DEBUG_CFLAGS}
+	 CXXFLAGS     := ${DEBUG_CXXFLAGS}
+	 LDFLAGS      := ${DEBUG_LDFLAGS}
 else
-  uname_o := $(shell uname -o)
-endif
-ifeq ($(strip $(uname_s)),Linux)
-  linux := true
-endif
-ifeq ($(strip $(uname_o)),Cygwin)
-  cygwin := true
+	 CFLAGS       := ${RELEASE_CFLAGS}
+	 CXXFLAGS     := ${RELEASE_CXXFLAGS}
+	 LDFLAGS      := ${RELEASE_LDFLAGS}
 endif
 
-CFLAGS += -O0 -Wall -g -c
-CFLAGS += -I.
-
-#CFLAGS += -ISDL-1.2.8/include
-#LDFLAGS += -LSDL-1.2.8/lib -lSDL -lSDLmain
-
-CC := gcc
-LD := gcc
-
-ifeq ($(strip $(macosx)),true)
-  LDFLAGS += -framework Carbon -framework IOKit
-  JAVAC := javac
-  MANYMOUSEJNILIB := libManyMouse.jnilib
-  JNICFLAGS += -I/System/Library/Frameworks/JavaVM.framework/Headers
-  JNILDFLAGS += -bundle -framework JavaVM
+ifeq (YES, ${PROFILE})
+	 CFLAGS   := ${CFLAGS} -pg -O3
+	 CXXFLAGS := ${CXXFLAGS} -pg -O3
+	 LDFLAGS  := ${LDFLAGS} -pg
 endif
 
-ifeq ($(strip $(linux)),true)
-  CFLAGS += -fPIC -I/usr/src/linux/include
-  LDFLAGS += -ldl
-  JDKPATH := $(LINUX_JDK_PATH)
-  JAVAC := $(JDKPATH)bin/javac
-  MANYMOUSEJNILIB := libManyMouse.so
-  JNICFLAGS += -I$(JDKPATH)include -I$(JDKPATH)include/linux
-  JNILDFLAGS += -shared -Wl,-soname,$(MANYMOUSEJNILIB)
-endif
+LDFLAGS += -framework Carbon -framework IOKit
 
-ifeq ($(strip $(cygwin)),true)
-  JDKPATH := $(WINDOWS_JDK_PATH)
-  JAVAC := $(JDKPATH)bin\\javac
-  MANYMOUSEJNILIB := ManyMouse.dll
-  JNICFLAGS += -I$(JDKPATH)include -I$(JDKPATH)include\\win32
-  JNILDFLAGS += -Wl,--add-stdcall-alias -shared
-endif
+#****************************************************************************
+# Preprocessor directives
+#****************************************************************************
+
+DEFS :=
+
+#****************************************************************************
+# Include paths
+#****************************************************************************
+
+#INCS := -I/usr/include/g++-2 -I/usr/local/include
+INCS :=
 
 
+#****************************************************************************
+# Makefile code common to all platforms
+#****************************************************************************
 
-BASEOBJS := linux_evdev.o macosx_hidutilities.o macosx_hidmanager.o windows_wminput.o x11_xinput2.o manymouse.o
+CFLAGS   := ${CFLAGS}   ${DEFS}
+CXXFLAGS := ${CXXFLAGS} ${DEFS}
 
-.PHONY: clean all
+#****************************************************************************
+# Targets of the build
+#****************************************************************************
 
-all: detect_mice test_manymouse_stdio test_manymouse_sdl mmpong manymousepong
+OUTPUT := manymouse
+
+all: ${OUTPUT}
+
+
+#****************************************************************************
+# Source files
+#****************************************************************************
+
+SRCS := linux_evdev.c macosx_hidmanager.c macosx_hidutilities.c manymouse.c windows_wminput.c x11_xinput2.c
+
+# Add on the sources for libraries
+SRCS := ${SRCS}
+
+OBJS := $(addsuffix .o,$(basename ${SRCS}))
+
+#****************************************************************************
+# Output
+#****************************************************************************
+
+${OUTPUT}: ${OBJS}
+		${LD} -o $@ ${LDFLAGS} ${OBJS} ${LIBS} ${EXTRA_LIBS}
+
+#****************************************************************************
+# common rules
+#****************************************************************************
+
+# Rules for compiling source files to object files
+%.o : %.cpp
+		${CXX} -c ${CXXFLAGS} ${INCS} $< -o $@
+
+%.o : %.c
+		${CC} -c ${CFLAGS} ${INCS} $< -o $@
+
+dist:
+		bash makedistlinux
 
 clean:
-	rm -rf *.o *.obj *.exe *.class $(MANYMOUSEJNILIB) example/*.o example/*.obj test_manymouse_stdio test_manymouse_sdl detect_mice mmpong manymousepong
+		-rm -f core ${OBJS} ${OUTPUT}
 
-%.o : %c
-	$(CC) $(CFLAGS) -o $@ $<
+depend:
+		#makedepend ${INCS} ${SRCS}
 
-example/test_manymouse_sdl.o : example/test_manymouse_sdl.c
-	$(CC) $(CFLAGS) -o $@ $< `sdl-config --cflags`
+archive:
+		ar rcs libmanymouse.a *.o
 
-example/mmpong.o : example/mmpong.c
-	$(CC) $(CFLAGS) -o $@ $< `sdl-config --cflags`
-
-example/manymousepong.o : example/manymousepong.c
-	$(CC) $(CFLAGS) -o $@ $< `sdl-config --cflags`
-
-detect_mice: $(BASEOBJS) example/detect_mice.o
-	$(LD) -o $@ $+ $(LDFLAGS)
-
-test_manymouse_stdio: $(BASEOBJS) example/test_manymouse_stdio.o
-	$(LD) -o $@ $+ $(LDFLAGS) 
-
-test_manymouse_sdl: $(BASEOBJS) example/test_manymouse_sdl.o
-	$(LD) -o $@ $+ `sdl-config --libs` $(LDFLAGS) 
-
-mmpong: $(BASEOBJS) example/mmpong.o
-	$(LD) -o $@ $+ `sdl-config --libs` $(LDFLAGS)
-
-manymousepong: $(BASEOBJS) example/manymousepong.o
-	$(LD) -o $@ $+ `sdl-config --libs` $(LDFLAGS) 
-
-
-# Java support ...
-
-.PHONY: java
-java: $(MANYMOUSEJNILIB) ManyMouse.class ManyMouseEvent.class TestManyMouse.class
-
-ManyMouse.class: contrib/java/ManyMouse.java $(MANYMOUSEJNILIB)
-	$(JAVAC) -d . -classpath contrib/java $<
-
-ManyMouseEvent.class: contrib/java/ManyMouseEvent.java ManyMouse.class
-	$(JAVAC) -d . -classpath contrib/java $<
-
-TestManyMouse.class: contrib/java/TestManyMouse.java ManyMouse.class ManyMouseEvent.class
-	$(JAVAC) -d . $<
-
-ManyMouseJava.o: contrib/java/ManyMouseJava.c
-	$(CC) $(CFLAGS) -o $@ $< $(JNICFLAGS)
-
-$(MANYMOUSEJNILIB): $(BASEOBJS) ManyMouseJava.o
-	@mkdir -p $(dir $@)
-	$(LD) $(LDFLAGS) -o $@ $^ $(JNILDFLAGS)
-
-# end of Makefile ...
-
+# linux_evdev.o: linux_evdev.c x11_xinput2.c
+# macosx.o: macosx_hidmanager.c macosx_hidutilities.c
+# manymouse.o: manymouse.h manymouse.c
+# windows.o: windows_wminput.c

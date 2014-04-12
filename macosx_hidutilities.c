@@ -97,8 +97,8 @@ struct recElement
     long calMin; 							// min returned value
     long calMax; 							// max returned value (calibrate call)
     long userMin; 							// user set value to scale to (scale call)
-    long userMax;							
-    
+    long userMax;
+
 	struct recElement * pPrevious;			// previous element (NULL at list head)
     struct recElement * pChild;				// next child (only of collections)
     struct recElement * pSibling;			// next sibling (for elements and collections)
@@ -144,7 +144,7 @@ struct recDevice
     long sliders;							// number of sliders (calculated, not reported by device)
     long dials;								// number of dials (calculated, not reported by device)
     long wheels;							// number of wheels (calculated, not reported by device)
-    recElement* pListElements; 				// head of linked list of elements 
+    recElement* pListElements; 				// head of linked list of elements
     DisconnectState disconnect; // (ryan added this.)
     AbsoluteTime lastScrollTime;  // (ryan added this.)
     int logical;  // (ryan added this.)
@@ -158,7 +158,7 @@ typedef recDevice* pRecDevice;
 static IONotificationPortRef	gNotifyPort;
 static io_iterator_t		gAddedIter;
 static CFRunLoopRef		gRunLoop;
-#endif USE_NOTIFICATIONS
+#endif // USE_NOTIFICATIONS
 
 // for element retrieval
 static pRecDevice gCurrentGetDevice = NULL;
@@ -386,7 +386,7 @@ static void hid_AddElement (CFTypeRef refElement, pRecElement * ppElementCurrent
 #if 0
             else
                 HIDReportError ("CFNumberGetValue error when getting value for refUsage or refUsagePage.");
-#endif 0
+#endif // 0
         }
         else // collection
 			pElement = (pRecElement) malloc (sizeof (recElement));
@@ -673,7 +673,7 @@ static pRecElement hid_GetDeviceElement (pRecElement pElement, HIDElementTypeMas
 static unsigned long HIDCloseReleaseInterface (pRecDevice pDevice)
 {
 	IOReturn result = kIOReturnSuccess;
-	
+
 	if (HIDIsValidDevice(pDevice) && (NULL != pDevice->interface))
 	{
 		// close the interface
@@ -689,9 +689,9 @@ static unsigned long HIDCloseReleaseInterface (pRecDevice pDevice)
 		if (kIOReturnSuccess != result)
 			HIDREPORTERRORNUM ("HIDCloseReleaseInterface - Failed to release interface.", result);
 		pDevice->interface = NULL;
-	}	
+	}
 	return result;
-}      
+}
 
 
 // ---------------------------------
@@ -741,7 +741,7 @@ static pRecDevice hid_DisposeDevice (pRecDevice pDevice)
 #if 0
 		if (kIOReturnSuccess != result)
 			HIDReportErrorNum ("hid_DisposeDevice: HIDDequeueDevice error: 0x%8.8X.", result);
-#endif 1
+#endif // 1
 
         hid_DisposeDeviceElements (pDevice->pListElements);
 		pDevice->pListElements = NULL;
@@ -765,7 +765,7 @@ static pRecDevice hid_DisposeDevice (pRecDevice pDevice)
 			if (kIOReturnSuccess != result)
 				HIDReportErrorNum ("hid_DisposeDevice: IOObjectRelease error: 0x%8.8X.", result);
 		}
-#endif USE_NOTIFICATIONS
+#endif // USE_NOTIFICATIONS
 
 		// remove this device from the device list
 		if (gpDeviceList == pDevice)	// head of list?
@@ -868,7 +868,7 @@ static unsigned long  HIDDequeueDevice (pRecDevice pDevice)
 			CFRelease(pDevice->queueRunLoopSource);
 			pDevice->queueRunLoopSource = NULL;
 		}
-#endif USE_ASYNC_EVENTS
+#endif // USE_ASYNC_EVENTS
 	}
 	else
 	{
@@ -949,7 +949,7 @@ static unsigned long HIDCreateOpenDeviceInterface (UInt32 hidDevice, pRecDevice 
 			plugInResult = (*ppPlugInInterface)->QueryInterface (ppPlugInInterface,
 														CFUUIDGetUUIDBytes (kIOHIDDeviceInterfaceID), (void *) &(pDevice->interface));
 			if (S_OK != plugInResult)
-				HIDReportErrorNum ("CouldnÕt query HID class device interface from plugInInterface", plugInResult);
+				HIDReportErrorNum ("Couldn't query HID class device interface from plugInInterface", plugInResult);
 			IODestroyPlugInInterface (ppPlugInInterface); // replace (*ppPlugInInterface)->Release (ppPlugInInterface)
 		}
 		else
@@ -971,7 +971,7 @@ static unsigned long HIDCreateOpenDeviceInterface (UInt32 hidDevice, pRecDevice 
 static pRecDevice* hid_AddDevice (pRecDevice *ppListDeviceHead, pRecDevice pNewDevice)
 {
 	pRecDevice* result = NULL;
-	
+
     if (NULL == *ppListDeviceHead)
         result = ppListDeviceHead;
     else
@@ -1072,7 +1072,7 @@ static void hid_RemovalCallbackFunction(void * target, IOReturn result, void * r
         pDevice->disconnect = DISCONNECT_TELLUSER;
 }
 
-#endif USE_NOTIFICATIONS
+#endif // USE_NOTIFICATIONS
 
 
 
@@ -1143,7 +1143,7 @@ static void hid_AddDevices (void *refCon, io_iterator_t iterator)
 			HIDReportErrorNum ("hid_AddDevices: IOServiceAddInterestNotification error: x0%8.8lX.", result);
 #else
 		result = (*(IOHIDDeviceInterface**)pNewDevice->interface)->setRemovalCallback (pNewDevice->interface, hid_RemovalCallbackFunction,pNewDeviceAt,0);
-#endif USE_NOTIFICATIONS
+#endif // USE_NOTIFICATIONS
 
 		// release the device object, it is no longer needed
 		result = IOObjectRelease (ioHIDDeviceObject);
@@ -1243,7 +1243,7 @@ static Boolean HIDBuildDeviceList (UInt32 usagePage, UInt32 usage)
 				return true;
 			}
 		}
-#endif USE_NOTIFICATIONS
+#endif // USE_NOTIFICATIONS
 		// IOServiceGetMatchingServices consumes a reference to the dictionary, so we don't need to release the dictionary ref.
 		hidMatchDictionary = NULL;
     }
@@ -1453,7 +1453,7 @@ static unsigned long  HIDQueueDevice (pRecDevice pDevice)
 		result = (*(IOHIDQueueInterface**) pDevice->queue)->start (pDevice->queue);
 		if (kIOReturnSuccess != result)
 			HIDREPORTERRORNUM ("HIDQueueDevice - Failed to start queue.", result);
-		
+
 	}
 	else
 		HIDREPORTERROR ("HIDQueueDevice - Invalid device.");
