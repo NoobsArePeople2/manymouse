@@ -8,7 +8,7 @@
 
 #include "manymouse.h"
 
-#if (defined(_WIN32) || defined(_WINDOWS) || defined(__CYGWIN__))
+#if (defined(_WIN32) || defined(_WINDOWS) || defined(__CYGWIN__) || defined(__MINGW32__))
 
 /* WinUser.h won't include rawinput stuff without this... */
 #if (_WIN32_WINNT < 0x0501)
@@ -324,7 +324,7 @@ static void wminput_handler(WPARAM wParam, LPARAM lParam)
         return;  /* unexpected packet? */
 
     lpb = (LPBYTE) alloca(dwSize);
-    if (lpb == NULL) 
+    if (lpb == NULL)
         return;
     if (pGetRawInputData((HRAWINPUT) lParam, RID_INPUT, lpb, &dwSize,
                           sizeof (RAWINPUTHEADER)) != dwSize)

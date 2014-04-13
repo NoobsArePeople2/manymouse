@@ -18,13 +18,22 @@ PROFILE        := NO
 # CC     := gcc
 # CXX    := g++
 # LD     := g++
-CC     := clang
-CXX    := clang++
-LD     := clang++
+ifeq ($(OS),Windows_NT)
+	CC     := gcc
+	CXX    := g++
+	LD     := g++
+	ARCH   :=
+	C_LIB  :=
+else
+	CC     := clang
+	CXX    := clang++
+	LD     := clang++
+	ARCH   := -arch i386
+	C_LIB  := -stdlib=libc++
+endif
+
 AR     := ar rc
 RANLIB := ranlib
-ARCH   := -arch i386
-C_LIB  := -stdlib=libc++
 
 DEBUG_CFLAGS     := -Wall -Wno-format -g -DDEBUG ${ARCH} ${C_LIB}
 RELEASE_CFLAGS   := -Wall -Wno-unknown-pragmas -Wno-format -O3 ${ARCH} ${C_LIB}
@@ -53,7 +62,11 @@ ifeq (YES, ${PROFILE})
 	 LDFLAGS  := ${LDFLAGS} -pg
 endif
 
-LDFLAGS += -framework Carbon -framework IOKit
+ifeq ($(OS),Windows_NT)
+
+else
+	LDFLAGS += -framework Carbon -framework IOKit
+endif
 
 #****************************************************************************
 # Preprocessor directives
